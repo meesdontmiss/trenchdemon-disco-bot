@@ -62,6 +62,13 @@ The `bot` service runs `prisma migrate deploy` before starting.
 
 Provider endpoints are intentionally environment-configured. Insert the current URLs from your Pump.fun data vendor rather than relying on fixed code constants.
 
+Direct Pump.fun frontend provider:
+
+- `PUMP_PROVIDER=pumpfun`
+- `PUMPFUN_FRONTEND_BASE_URL=https://frontend-api-v3.pump.fun`
+
+This uses the public frontend data API and does not require a PumpPortal account. It is useful for polling latest/new Pump.fun coins, but it is unofficial, may be rate-limited, and can change without notice.
+
 PumpPortal:
 
 - `PUMPPORTAL_NEW_TOKENS_URL`
