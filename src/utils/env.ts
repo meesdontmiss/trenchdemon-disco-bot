@@ -10,6 +10,9 @@ for (const file of ["env.local", ".env.local", ".env"]) {
   }
 }
 
+process.env.DISCORD_TOKEN ??= process.env.DISCORD_BOT_TOKEN;
+process.env.DISCORD_CLIENT_ID ??= process.env.DISCORD_APPLICATION_ID;
+
 const schema = z.object({
   LLM_PROVIDER: z.enum(["openai", "openclaw"]).default("openai"),
   DISCORD_TOKEN: z.string().min(1),

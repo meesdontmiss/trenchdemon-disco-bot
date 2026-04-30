@@ -61,17 +61,22 @@ export async function extractNarrative(input: string): Promise<NarrativeExtracti
 function getLlmConfig(): { apiKey?: string; baseURL?: string; model: string } {
   if (env.LLM_PROVIDER === "openclaw") {
     return {
-      apiKey: env.OPENCLAW_API_KEY ?? env.OPENAI_API_KEY,
-      baseURL: env.OPENCLAW_BASE_URL ?? env.OPENAI_BASE_URL ?? "http://localhost:18789/v1",
-      model: env.OPENCLAW_MODEL ?? env.OPENAI_MODEL
+      apiKey: valueOrUndefined(env.OPENCLAW_API_KEY) ?? valueOrUndefined(env.OPENAI_API_KEY),
+      baseURL: valueOrUndefined(env.OPENCLAW_BASE_URL) ?? valueOrUndefined(env.OPENAI_BASE_URL) ?? "http://localhost:18789/v1",
+      model: valueOrUndefined(env.OPENCLAW_MODEL) ?? env.OPENAI_MODEL
     };
   }
 
   return {
-    apiKey: env.OPENAI_API_KEY,
-    baseURL: env.OPENAI_BASE_URL,
+    apiKey: valueOrUndefined(env.OPENAI_API_KEY),
+    baseURL: valueOrUndefined(env.OPENAI_BASE_URL),
     model: env.OPENAI_MODEL
   };
+}
+
+function valueOrUndefined(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function sanitizeExtraction(extraction: NarrativeExtraction, input: string): NarrativeExtraction {

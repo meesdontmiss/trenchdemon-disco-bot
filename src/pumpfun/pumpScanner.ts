@@ -8,7 +8,7 @@ import { env } from "../utils/env.js";
 import { toJson } from "../utils/json.js";
 import { logger } from "../utils/logger.js";
 import { isStillBonding } from "./bondingStatus.js";
-import { NormalizedPumpToken, PumpFunProvider } from "./providers/ProviderInterface.js";
+import { NormalizedPumpToken, ProviderConfigurationError, PumpFunProvider } from "./providers/ProviderInterface.js";
 
 export class PumpScanner {
   private providerErrorSince: Date | null = null;
@@ -19,12 +19,29 @@ export class PumpScanner {
   ) {}
 
   async scanOnce(): Promise<void> {
+    const results = await Promise.allSettled([this.provider.getNewTokens(100), this.provider.getBondingTokens(100)]);
+    const tokens: NormalizedPumpToken[] = [];
+    const errors: unknown[] = [];
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        tokens.push(...result.value);
+      } else if (result.reason instanceof ProviderConfigurationError && this.provider.supportsRealtime()) {
+        logger.info(
+          { provider: this.provider.name, reason: result.reason.message },
+          "polling endpoint not configured; realtime scanning remains available"
+        );
+      } else {
+        errors.push(result.reason);
+      }
+    }
+
     try {
-      const [newTokens, bondingTokens] = await Promise.all([
-        this.provider.getNewTokens(100),
-        this.provider.getBondingTokens(100)
-      ]);
-      const unique = dedupeTokens([...newTokens, ...bondingTokens]);
+      if (errors.length) {
+        throw errors[0];
+      }
+
+      const unique = dedupeTokens(tokens);
       logger.info({ count: unique.length, provider: this.provider.name }, "scanned pump provider tokens");
       this.providerErrorSince = null;
 
