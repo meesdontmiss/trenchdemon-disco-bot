@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NarrativeStatus {
+  ACTIVE
+  CONCLUDED
+  ARCHIVED
+}
+
+enum SourceType {
+  URL
+  TEXT
+  ARTICLE
+  TWEET
+}
+
+enum CandidateState {
+  NEW_MATCH
+  WATCHING
+  STRONG_CANDIDATE
+  PINNED
+  IGNORED
+  GRADUATED
+  FINAL_SELECTED
+}
+
+model NarrativeWatch {
+  id                String          @id @default(cuid())
+  discordGuildId    String
+  discordChannelId  String
+  createdByUserId   String
+  status            NarrativeStatus @default(ACTIVE)
+  sourceType        SourceType
+  sourceUrl         String?
+  rawInput          String
+  title             String
+  summary           String
+  entities          Json
+  keywords          Json
+  possibleTickers   Json
+  negativeKeywords  Json
+  lastScannedAt     DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  concludedAt       DateTime?
+  finalMintAddress  String?
+
+  candidates        CoinCandidate[]
+  alerts            AlertLog[]
+
+  @@index([status, createdAt])
+  @@index([discordGuildId, discordChannelId])
+}
+
+model CoinCandidate {
+  id                    String          @id @default(cuid())
+  narrativeWatchId      String
+  narrativeWatch        NarrativeWatch  @relation(fields: [narrativeWatchId], references: [id], onDelete: Cascade)
+  mintAddress           String
+  pumpUrl               String?
+  name                  String
+  symbol                String
+  description           String?
+  imageUrl              String?
+  creatorWallet         String?
+  createdAtOnchain      DateTime?
+  firstSeenAt           DateTime        @default(now())
+  lastUpdatedAt         DateTime        @updatedAt
+  marketCapUsd          Float?
+  bondingCurveProgress  Float?
+  isGraduated           Boolean         @default(false)
+  isIgnored             Boolean         @default(false)
+  isPinned              Boolean         @default(false)
+  state                 CandidateState  @default(NEW_MATCH)
+  matchKeywords         Json
+  matchExplanation      String
+  riskFlags             Json
+  confidenceScore       Float
+  freshnessScore        Float
+  bondingScore          Float
+  socialScore           Float
+  cloneRiskScore        Float
+  finalScore            Float
+  rawProviderData       Json
+
+  @@unique([narrativeWatchId, mintAddress])
+  @@index([mintAddress])
+  @@index([narrativeWatchId, finalScore])
+  @@index([isIgnored, isGraduated])
+}
+
+model PumpTokenSnapshot {
+  id                    String   @id @default(cuid())
+  mintAddress           String
+  name                  String
+  symbol                String
+  description           String?
+  imageUrl              String?
+  creatorWallet         String?
+  marketCapUsd          Float?
+  bondingCurveProgress  Float?
+  isGraduated           Boolean  @default(false)
+  provider              String
+  rawData               Json
+  observedAt            DateTime @default(now())
+
+  @@index([mintAddress, observedAt])
+  @@index([provider, observedAt])
+}
+
+model AlertLog {
+  id                String          @id @default(cuid())
+  narrativeWatchId  String
+  narrativeWatch    NarrativeWatch  @relation(fields: [narrativeWatchId], references: [id], onDelete: Cascade)
+  candidateId       String?
+  type              String
+  message           String
+  sentAt            DateTime        @default(now())
+
+  @@index([narrativeWatchId, type, sentAt])
+}

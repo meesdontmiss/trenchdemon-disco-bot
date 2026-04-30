@@ -1,0 +1,41 @@
+{
+  "name": "narrative-coin-scout",
+  "version": "0.1.0",
+  "description": "Discord intelligence bot for Solana Pump.fun narrative discovery.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "discord:register": "tsx src/registerCommands.ts"
+  },
+  "dependencies": {
+    "@discordjs/builders": "^1.13.0",
+    "@discordjs/rest": "^2.6.0",
+    "@prisma/client": "^6.19.0",
+    "bullmq": "^5.64.1",
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.8.2",
+    "openai": "^6.9.1",
+    "pino": "^10.1.0",
+    "ws": "^8.18.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/ws": "^8.18.1",
+    "prisma": "^6.19.0",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}
