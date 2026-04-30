@@ -1,0 +1,44 @@
+services:
+  - type: worker
+    name: narrative-coin-scout
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: LLM_PROVIDER
+        value: openclaw
+      - key: OPENCLAW_BASE_URL
+        sync: false
+      - key: OPENCLAW_API_KEY
+        sync: false
+      - key: OPENCLAW_MODEL
+        sync: false
+      - key: PUMP_PROVIDER
+        value: pumpfun
+      - key: PUMPFUN_FRONTEND_BASE_URL
+        value: https://frontend-api-v3.pump.fun
+      - key: SCAN_INTERVAL_SECONDS
+        value: "30"
+      - key: MIN_ALERT_SCORE
+        value: "70"
+      - key: MAX_ACTIVE_WATCHES
+        value: "100"
+      - key: DEFAULT_LOOKBACK_MINUTES
+        value: "60"
+      - key: COMMAND_RATE_LIMIT_SECONDS
+        value: "5"
+      - key: ADMIN_ONLY_CONCLUDE_ARCHIVE
+        value: "false"

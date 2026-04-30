@@ -58,6 +58,30 @@ docker compose up --build
 
 The `bot` service runs `prisma migrate deploy` before starting.
 
+## Deployment
+
+This project is a persistent Discord worker. It needs a runtime that keeps `node dist/index.js`
+running continuously so the Discord gateway, scanner loop, Redis queue, and provider connections stay alive.
+
+Recommended targets:
+
+- Render worker using `render.yaml`
+- Railway worker
+- Fly.io machine
+- VPS or Docker host
+
+Vercel is not the production runtime for this bot. The repository includes `vercel.json` and a small
+static `public/index.html` only so accidental Vercel builds do not fail with a missing output directory.
+That Vercel deployment will not run the Discord bot.
+
+For Render:
+
+1. Create a Blueprint from this GitHub repo.
+2. Fill the `sync: false` environment variables in the Render dashboard.
+3. Use a managed Redis URL for `REDIS_URL`.
+4. Use your Neon connection string for `DATABASE_URL`.
+5. Deploy the worker.
+
 ## Provider Configuration
 
 Provider endpoints are intentionally environment-configured. Insert the current URLs from your Pump.fun data vendor rather than relying on fixed code constants.
