@@ -71,8 +71,8 @@ Recommended targets:
 - VPS or Docker host
 
 Vercel is not the production runtime for this bot. The repository includes `vercel.json` and a small
-static `public/index.html` only so accidental Vercel builds do not fail with a missing output directory.
-That Vercel deployment will not run the Discord bot.
+static dashboard shell only so accidental Vercel builds do not fail with a missing output directory.
+That Vercel deployment will not run the Discord bot or dashboard API.
 
 For Render:
 
@@ -81,6 +81,24 @@ For Render:
 3. Use a managed Redis URL for `REDIS_URL`.
 4. Use your Neon connection string for `DATABASE_URL`.
 5. Deploy the worker.
+
+## Dashboard
+
+The bot process serves a private dashboard on `PORT`:
+
+- `/` renders the dashboard UI.
+- `/api/login` accepts the dashboard password.
+- `/api/dashboard` returns aggregate watch, candidate, alert, and scan data.
+
+Set:
+
+```bash
+DASHBOARD_PASSWORD=77th
+DASHBOARD_SESSION_SECRET=<long-random-string>
+PORT=3000
+```
+
+On Render, `PORT` is injected automatically. The `render.yaml` blueprint provisions the dashboard password and generates a session secret.
 
 ## Provider Configuration
 

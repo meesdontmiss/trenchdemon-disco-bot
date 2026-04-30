@@ -49,7 +49,10 @@ const schema = z.object({
   ADMIN_ONLY_CONCLUDE_ARCHIVE: z
     .string()
     .default("false")
-    .transform((value) => value.toLowerCase() === "true")
+    .transform((value) => value.toLowerCase() === "true"),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  DASHBOARD_PASSWORD: z.string().default("77th"),
+  DASHBOARD_SESSION_SECRET: z.string().optional()
 });
 
 export const env = schema.parse(process.env);

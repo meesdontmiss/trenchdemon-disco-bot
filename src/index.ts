@@ -7,6 +7,7 @@ import { createPumpProvider } from "./pumpfun/providers/index.js";
 import { PumpScanner } from "./pumpfun/pumpScanner.js";
 import { env } from "./utils/env.js";
 import { logger } from "./utils/logger.js";
+import { startDashboardServer } from "./web/server.js";
 
 const client = createDiscordClient();
 const provider = createPumpProvider();
@@ -14,9 +15,11 @@ const alerts = new DiscordAlertService(client);
 const scanner = new PumpScanner(provider, alerts);
 
 let closeQueue: (() => Promise<void>) | undefined;
+let closeDashboard: (() => Promise<void>) | undefined;
 let fallbackInterval: NodeJS.Timeout | undefined;
 
 async function main(): Promise<void> {
+  closeDashboard = await startDashboardServer();
   await client.login(env.DISCORD_TOKEN);
 
   await scanner.startRealtime().catch((error) => {
@@ -40,6 +43,9 @@ async function shutdown(signal: string): Promise<void> {
   }
   if (closeQueue) {
     await closeQueue().catch((error) => logger.warn({ err: error }, "failed to close queue"));
+  }
+  if (closeDashboard) {
+    await closeDashboard().catch((error) => logger.warn({ err: error }, "failed to close dashboard"));
   }
   await prisma.$disconnect();
   client.destroy();
