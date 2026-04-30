@@ -18,7 +18,7 @@ export function startDashboardServer(): Promise<() => Promise<void>> {
   app.use(express.static(publicDir, { extensions: ["html"] }));
 
   app.post("/api/login", (request, response) => {
-    const password = String(request.body?.password ?? "");
+    const password = String(request.body?.password ?? "").trim();
     if (!safeCompare(password, env.DASHBOARD_PASSWORD)) {
       response.status(401).json({ error: "Invalid password" });
       return;
