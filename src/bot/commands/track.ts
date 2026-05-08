@@ -13,6 +13,27 @@ export const trackCommand: BotCommand = {
     .setDescription("Create a narrative watch from a link or raw story text.")
     .addStringOption((option) =>
       option.setName("input").setDescription("URL, headline, or raw narrative text").setRequired(true).setMaxLength(2000)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("title")
+        .setDescription("Override the auto-detected title (used for exact-name matching)")
+        .setRequired(false)
+        .setMaxLength(120)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("keywords")
+        .setDescription("Extra keywords to add, comma-separated (e.g. doge,moon,wojak)")
+        .setRequired(false)
+        .setMaxLength(500)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("image")
+        .setDescription("URL of a reference image — bot will extract visual keywords from it")
+        .setRequired(false)
+        .setMaxLength(500)
     ),
   async execute(interaction) {
     await interaction.deferReply();
@@ -24,9 +45,19 @@ export const trackCommand: BotCommand = {
     }
 
     const rawInput = interaction.options.getString("input", true).trim();
+    const titleOverride = interaction.options.getString("title")?.trim() || undefined;
+    const imageUrl = interaction.options.getString("image")?.trim() || undefined;
+    const extraKeywordsRaw = interaction.options.getString("keywords");
+    const extraKeywords = extraKeywordsRaw
+      ? extraKeywordsRaw
+          .split(",")
+          .map((k) => k.trim())
+          .filter((k) => k.length >= 2)
+      : [];
+
     const source = inferSource(rawInput);
     const readableInput = await extractReadableInput(rawInput).catch(() => rawInput);
-    const extraction = await extractNarrative(readableInput);
+    const extraction = await extractNarrative(readableInput, { imageUrl, titleOverride, extraKeywords });
 
     const watch = await prisma.narrativeWatch.create({
       data: {
@@ -41,13 +72,14 @@ export const trackCommand: BotCommand = {
         entities: extraction.entities,
         keywords: [...extraction.keywords, ...extraction.alternate_keywords],
         possibleTickers: extraction.possible_tickers,
-        negativeKeywords: extraction.negative_keywords
+        negativeKeywords: extraction.negative_keywords,
+        imageMatchUrl: imageUrl
       }
     });
 
     await interaction.editReply({
       embeds: [narrativeEmbed(watch)],
-      content: "Status: Watching Pump.fun for new bonding-curve launches."
+      content: `Status: Watching Pump.fun for new bonding-curve launches.${imageUrl ? " 🖼 Visual keywords extracted from reference image." : ""}${extraKeywords.length ? ` Extra keywords added: ${extraKeywords.join(", ")}.` : ""}`
     });
   }
 };

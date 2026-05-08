@@ -3,6 +3,7 @@ import { z } from "zod";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { fallbackKeywords, tickerize, uniqueStrings } from "./keywordGenerator.js";
+import { describeImage } from "../scoring/imageMatchScore.js";
 import { NarrativeExtraction } from "./types.js";
 
 const extractionSchema = z.object({
@@ -18,10 +19,13 @@ const extractionSchema = z.object({
   confidence: z.number().min(0).max(100).default(60)
 });
 
-export async function extractNarrative(input: string): Promise<NarrativeExtraction> {
+export async function extractNarrative(
+  input: string,
+  options: { imageUrl?: string; titleOverride?: string; extraKeywords?: string[] } = {}
+): Promise<NarrativeExtraction> {
   const llm = getLlmConfig();
   if (!llm.apiKey && env.LLM_PROVIDER === "openai") {
-    return fallbackExtraction(input);
+    return fallbackExtraction(input, options);
   }
 
   const client = new OpenAI({
@@ -48,13 +52,13 @@ export async function extractNarrative(input: string): Promise<NarrativeExtracti
 
     const content = completion.choices[0]?.message.content;
     if (!content) {
-      return fallbackExtraction(input);
+      return fallbackExtraction(input, options);
     }
 
-    return sanitizeExtraction(extractionSchema.parse(JSON.parse(content)), input);
+    return applyOptions(sanitizeExtraction(extractionSchema.parse(JSON.parse(content)), input), options);
   } catch (error) {
     logger.warn({ err: error }, "LLM narrative extraction failed, using heuristic fallback");
-    return fallbackExtraction(input);
+    return fallbackExtraction(input, options);
   }
 }
 
@@ -100,7 +104,33 @@ function sanitizeExtraction(extraction: NarrativeExtraction, input: string): Nar
   };
 }
 
-function fallbackExtraction(input: string): NarrativeExtraction {
+async function applyOptions(
+  extraction: NarrativeExtraction,
+  options: { imageUrl?: string; titleOverride?: string; extraKeywords?: string[] }
+): Promise<NarrativeExtraction> {
+  const imageKeywords = options.imageUrl ? (await describeImage(options.imageUrl)).keywords : [];
+  const merged = uniqueStrings([...extraction.keywords, ...imageKeywords, ...(options.extraKeywords ?? [])], 50);
+  const tickers = uniqueStrings(
+    [...extraction.possible_tickers, ...merged.map(tickerize)].filter((v) => v.length >= 2),
+    15
+  );
+  return {
+    ...extraction,
+    title: options.titleOverride?.trim() || extraction.title,
+    keywords: merged,
+    possible_tickers: tickers
+  };
+}
+
+function fallbackExtraction(
+  input: string,
+  options: { imageUrl?: string; titleOverride?: string; extraKeywords?: string[] } = {}
+): Promise<NarrativeExtraction> {
+  const base = fallbackExtractionSync(input);
+  return applyOptions(base, options);
+}
+
+function fallbackExtractionSync(input: string): NarrativeExtraction {
   const keywords = fallbackKeywords(input);
   const title = fallbackTitle(input);
   return {

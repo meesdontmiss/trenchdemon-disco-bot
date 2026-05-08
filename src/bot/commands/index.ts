@@ -1,3 +1,4 @@
+import { addKeywordsCommand } from "./addkeywords.js";
 import { archiveCommand } from "./archive.js";
 import { bestCommand } from "./best.js";
 import { candidatesCommand } from "./candidates.js";
@@ -8,6 +9,7 @@ import { pinCommand } from "./pin.js";
 import { statusCommand } from "./status.js";
 import { trackCommand } from "./track.js";
 import { BotCommand } from "./types.js";
+import { snipeCommand } from "./snipe.js";
 import { watchlistCommand } from "./watchlist.js";
 
 export const commands: BotCommand[] = [
@@ -20,7 +22,9 @@ export const commands: BotCommand[] = [
   concludeCommand,
   archiveCommand,
   watchlistCommand,
-  statusCommand
+  statusCommand,
+  addKeywordsCommand,
+  snipeCommand
 ];
 
 export const commandMap = new Map(commands.map((command) => [command.data.name, command]));

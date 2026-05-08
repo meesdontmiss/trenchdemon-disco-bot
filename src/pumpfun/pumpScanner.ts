@@ -3,7 +3,9 @@ import { prisma } from "../db/prisma.js";
 import { DiscordAlertService } from "../discord/alertDiscord.js";
 import { termsFromWatch } from "../narratives/narrativeScorer.js";
 import { hasNegativeKeyword } from "../narratives/semanticMatcher.js";
+import { describeImage } from "../scoring/imageMatchScore.js";
 import { scoreCandidate } from "../scoring/candidateScore.js";
+import { sniper } from "../sniper/sniperService.js";
 import { env } from "../utils/env.js";
 import { toJson } from "../utils/json.js";
 import { logger } from "../utils/logger.js";
@@ -109,7 +111,12 @@ export class PumpScanner {
     });
     const previousTop = getTopCandidate(existing);
     const previousCandidate = existing.find((candidate) => candidate.mintAddress === token.mintAddress);
-    const score = scoreCandidate(terms, token, watch.createdAt, existing);
+
+    const referenceImageKeywords: string[] = watch.imageMatchUrl
+      ? (await describeImage(watch.imageMatchUrl).catch(() => ({ keywords: [] }))).keywords
+      : [];
+
+    const score = await scoreCandidate(terms, token, watch.createdAt, existing, referenceImageKeywords);
 
     if (!score.matched) {
       return;
@@ -142,6 +149,7 @@ export class PumpScanner {
         freshnessScore: score.freshnessScore,
         bondingScore: score.bondingScore,
         socialScore: score.socialScore,
+        imageScore: score.imageScore,
         cloneRiskScore: score.cloneRiskScore,
         finalScore: score.finalScore,
         rawProviderData: toJson(token.raw)
@@ -167,6 +175,7 @@ export class PumpScanner {
         freshnessScore: score.freshnessScore,
         bondingScore: score.bondingScore,
         socialScore: score.socialScore,
+        imageScore: score.imageScore,
         cloneRiskScore: score.cloneRiskScore,
         finalScore: score.finalScore,
         rawProviderData: toJson(token.raw)
@@ -174,6 +183,17 @@ export class PumpScanner {
     });
 
     await this.maybeAlert(watch, candidate, previousTop, previousCandidate);
+
+    if (!previousCandidate && sniper.isEnabled()) {
+      await sniper.maybeSnipe({
+        mintAddress: token.mintAddress,
+        narrativeWatchId: watch.id,
+        candidateId: candidate.id,
+        finalScore: score.finalScore
+      }).catch((error) => {
+        logger.error({ err: error, mint: token.mintAddress }, "sniper error");
+      });
+    }
   }
 
   private async maybeAlert(

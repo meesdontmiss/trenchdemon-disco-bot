@@ -8,6 +8,7 @@ import { cloneRiskFlags, cloneRiskScore } from "./cloneDetection.js";
 import { creatorRiskScore } from "./creatorReputation.js";
 import { freshnessScore } from "./freshnessScore.js";
 import { socialMatchScore } from "./socialMatchScore.js";
+import { imageKeywordMatchScore, describeImage } from "./imageMatchScore.js";
 
 export type CandidateScoreResult = {
   matched: boolean;
@@ -18,16 +19,18 @@ export type CandidateScoreResult = {
   freshnessScore: number;
   bondingScore: number;
   socialScore: number;
+  imageScore: number;
   cloneRiskScore: number;
   finalScore: number;
 };
 
-export function scoreCandidate(
+export async function scoreCandidate(
   narrative: NarrativeTerms,
   token: NormalizedPumpToken,
   narrativeCreatedAt: Date,
-  existingCandidates: CoinCandidate[]
-): CandidateScoreResult {
+  existingCandidates: CoinCandidate[],
+  referenceImageKeywords: string[] = []
+): Promise<CandidateScoreResult> {
   const tokenText = normalizeText([token.name, token.symbol, token.description ?? "", ...(token.socialLinks ?? [])].join(" "));
   const symbol = tickerize(token.symbol);
   const keywordHits = narrative.keywords.filter((keyword) => {
@@ -49,13 +52,20 @@ export function scoreCandidate(
   const clone = Math.max(cloneRiskScore(token, existingCandidates), creatorRiskScore(token.creatorWallet, existingCandidates));
   const cloneSafety = 100 - clone;
 
+  const imageDesc = referenceImageKeywords.length && token.imageUrl
+    ? await describeImage(token.imageUrl)
+    : { keywords: [], rawDescription: "" };
+  const imageScore = imageKeywordMatchScore(referenceImageKeywords, imageDesc);
+
+  const hasImageMatch = referenceImageKeywords.length > 0;
   const finalScore = clamp(
-    keywordScore * 0.3 +
-      semanticScore * 0.2 +
+    keywordScore * (hasImageMatch ? 0.27 : 0.3) +
+      semanticScore * (hasImageMatch ? 0.18 : 0.2) +
       fresh * 0.15 +
       bond * 0.15 +
       tickerScore * 0.1 +
       social * 0.05 +
+      imageScore * (hasImageMatch ? 0.05 : 0) +
       cloneSafety * 0.05
   );
 
@@ -74,6 +84,7 @@ export function scoreCandidate(
     freshnessScore: Math.round(fresh),
     bondingScore: Math.round(bond),
     socialScore: Math.round(social),
+    imageScore: Math.round(imageScore),
     cloneRiskScore: Math.round(clone),
     finalScore: Math.round(finalScore)
   };

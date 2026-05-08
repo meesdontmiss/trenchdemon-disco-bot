@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@discordjs/builders": "^1.13.0",
+    "@solana/web3.js": "^1.95.8",
+    "bs58": "^6.0.0",
     "@discordjs/rest": "^2.6.0",
     "@prisma/client": "^6.19.0",
     "bullmq": "^5.64.1",

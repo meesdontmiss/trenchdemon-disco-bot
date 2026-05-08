@@ -45,6 +45,7 @@ model NarrativeWatch {
   keywords          Json
   possibleTickers   Json
   negativeKeywords  Json
+  imageMatchUrl     String?
   lastScannedAt     DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -53,6 +54,7 @@ model NarrativeWatch {
 
   candidates        CoinCandidate[]
   alerts            AlertLog[]
+  snipeOrders       SnipeOrder[]
 
   @@index([status, createdAt])
   @@index([discordGuildId, discordChannelId])
@@ -85,6 +87,7 @@ model CoinCandidate {
   freshnessScore        Float
   bondingScore          Float
   socialScore           Float
+  imageScore            Float   @default(0)
   cloneRiskScore        Float
   finalScore            Float
   rawProviderData       Json
@@ -112,6 +115,32 @@ model PumpTokenSnapshot {
 
   @@index([mintAddress, observedAt])
   @@index([provider, observedAt])
+}
+
+enum SnipeStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+  SKIPPED
+}
+
+model SnipeOrder {
+  id                String       @id @default(cuid())
+  narrativeWatchId  String
+  narrativeWatch    NarrativeWatch @relation(fields: [narrativeWatchId], references: [id], onDelete: Cascade)
+  mintAddress       String
+  candidateId       String?
+  status            SnipeStatus  @default(PENDING)
+  amountSol         Float
+  txSignature       String?
+  errorMessage      String?
+  finalScore        Float
+  triggeredAt       DateTime     @default(now())
+  confirmedAt       DateTime?
+
+  @@index([narrativeWatchId, status])
+  @@index([mintAddress])
 }
 
 model AlertLog {

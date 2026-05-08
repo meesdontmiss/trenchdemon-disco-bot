@@ -34,6 +34,18 @@ const schema = z.object({
   PUMPPORTAL_NEW_TOKENS_URL: z.string().optional(),
   PUMPPORTAL_BONDING_TOKENS_URL: z.string().optional(),
   PUMPPORTAL_TOKEN_BY_MINT_URL: z.string().optional(),
+  PUMPPORTAL_TRADE_URL: z.string().default("https://pumpportal.fun/api/trade-local"),
+  SOLANA_RPC_URL: z.string().default("https://api.mainnet-beta.solana.com"),
+  SNIPE_ENABLED: z
+    .string()
+    .default("false")
+    .transform((v) => v.toLowerCase() === "true"),
+  SNIPE_WALLET_PRIVATE_KEY: z.string().optional(),
+  SNIPE_AMOUNT_SOL: z.coerce.number().positive().default(0.1),
+  SNIPE_MIN_SCORE: z.coerce.number().min(1).max(100).default(75),
+  SNIPE_SLIPPAGE: z.coerce.number().min(1).max(100).default(10),
+  SNIPE_PRIORITY_FEE: z.coerce.number().min(0).default(0.0005),
+  SNIPE_MAX_PER_WATCH: z.coerce.number().int().min(1).default(1),
   MORALIS_API_KEY: z.string().optional(),
   MORALIS_SOLANA_BASE_URL: z.string().optional(),
   MORALIS_NEW_TOKENS_URL: z.string().optional(),
